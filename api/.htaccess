@@ -20,6 +20,9 @@ Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
+    # Skip blocks for payment and API endpoints (allow browser requests)
+    RewriteRule ^(create-payment-intent|products|orders|categories)\.php$ - [L]
+    
     # Block script injection attempts
     RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
     RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]

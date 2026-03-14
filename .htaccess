@@ -29,6 +29,9 @@ Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
+    # Skip security blocks for API requests (payment, products, orders)
+    RewriteRule ^api/(create-payment-intent|products|orders|categories)\.php$ - [L]
+    
     # Block script injection attempts
     RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
     RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
@@ -60,6 +63,11 @@ ServerSignature Off
 # 8. ALLOW ACCESS TO ESSENTIAL FILES
 # Allow index files
 <FilesMatch "^(index\.html|index\.php)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+# Allow API PHP files (create-payment-intent, products, orders, categories)
+<FilesMatch "^(create-payment-intent|products|orders|categories)\.php$">
     Order allow,deny
     Allow from all
 </FilesMatch>
