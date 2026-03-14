@@ -14,7 +14,7 @@ Options -Indexes
 
 # 3. PROTECT YOUR CORE CONFIG FILES
 # Block access to sensitive configuration files
-<FilesMatch "^(\.htaccess|\.htpasswd|config\.php|config\.js|php\.ini|error_log|\.env|\.git|\.gitignore)$">
+<FilesMatch "^(\.htaccess|\.htpasswd|config\.php|php\.ini|error_log|\.env|\.git|\.gitignore)$">
     Order deny,allow
     Deny from all
 </FilesMatch>

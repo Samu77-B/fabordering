@@ -31,6 +31,16 @@
     
     <!-- Configuration -->
     <script src="config.js?v=7"></script>
+    <script>
+        if (typeof CONFIG === 'undefined') {
+            var CONFIG = {
+                API_BASE_URL: 'https://teasandcs.com/ndo-fabhair/api',
+                STRIPE_PUBLISHABLE_KEY: 'pk_live_your_stripe_publishable_key_here',
+                ADMIN_TOKEN: 'your-secure-admin-token-here',
+                ENVIRONMENT: 'production'
+            };
+        }
+    </script>
     
     <!-- Dynamic Product Loader -->
     <script src="dynamic_products.js?v=9"></script>
@@ -3744,7 +3754,8 @@
 
             setupStripeElements() {
                 console.log('Setting up Stripe Elements...');
-                console.log('Stripe publishable key:', CONFIG.STRIPE_PUBLISHABLE_KEY);
+                const stripeKey = (typeof CONFIG !== 'undefined' && CONFIG.STRIPE_PUBLISHABLE_KEY) ? CONFIG.STRIPE_PUBLISHABLE_KEY : 'pk_live_your_stripe_publishable_key_here';
+                console.log('Stripe publishable key:', stripeKey);
                 console.log('Client secret:', this.clientSecret);
                 
                 // Clear any existing content in card element
@@ -3758,7 +3769,7 @@
                 }
                 
                 // Create Stripe Elements
-                this.stripe = Stripe(CONFIG.STRIPE_PUBLISHABLE_KEY);
+                this.stripe = Stripe(stripeKey);
                 
                 const elements = this.stripe.elements({
                     clientSecret: this.clientSecret
