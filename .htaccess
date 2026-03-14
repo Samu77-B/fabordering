@@ -44,11 +44,6 @@ Options -Indexes
     RewriteCond %{QUERY_STRING} (javascript:).*(;|%3B) [NC,OR]
     RewriteCond %{QUERY_STRING} (\.\./|\.\.\\|\.\.%2F|\.\.%5C) [NC]
     RewriteRule ^(.*)$ - [F,L]
-    
-    # Block suspicious user agents
-    RewriteCond %{HTTP_USER_AGENT} (libwww-perl|wget|python|nikto|curl|scan|java|winhttp|clshttp|loader) [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} (<|>|'|%0A|%0D|%27|%3C|%3E|%00) [NC]
-    RewriteRule ^(.*)$ - [F,L]
 </IfModule>
 
 # 6. DISABLE SERVER SIGNATURE (Hides server version info)

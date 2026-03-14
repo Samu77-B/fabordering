@@ -1,67 +1,17 @@
-# ============================================
-# API DIRECTORY SECURITY .HTACCESS
-# Teas & C's PWA Ordering System
-# ============================================
+# API Directory - Minimal config to avoid 403 on payment endpoint
+# Only protect config, allow all PHP API files
 
-# 1. STOP CROSS-SITE CONTAMINATION
-Options -FollowSymLinks
-Options +SymLinksIfOwnerMatch
-
-# 2. DISABLE DIRECTORY BROWSING
 Options -Indexes
 
-# 3. PROTECT CONFIG FILES
-<FilesMatch "^(config\.php|\.htaccess|\.htpasswd|php\.ini|error_log|\.env)$">
+# Protect config only (DB credentials)
+<FilesMatch "^(config\.php|config\.local\.php|\.htaccess|\.env)$">
     Order deny,allow
     Deny from all
 </FilesMatch>
 
-# 4. BLOCK MALICIOUS SCRIPT INJECTIONS
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    
-    # Skip blocks for payment and API endpoints (allow browser requests)
-    RewriteRule ^(create-payment-intent|products|orders|categories)\.php$ - [L]
-    
-    # Block script injection attempts
-    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
-    RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
-    RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2}) [OR]
-    RewriteCond %{QUERY_STRING} base64_encode.*\(.*\) [OR]
-    RewriteCond %{QUERY_STRING} (eval\(|exec\(|system\(|shell_exec|passthru) [NC,OR]
-    RewriteCond %{QUERY_STRING} (\.\./|\.\.\\|\.\.%2F|\.\.%5C) [NC]
-    RewriteRule ^(.*)$ - [F,L]
-    
-    # Block suspicious user agents
-    RewriteCond %{HTTP_USER_AGENT} (libwww-perl|wget|python|nikto|curl|scan|java|winhttp|clshttp|loader) [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} (<|>|'|%0A|%0D|%27|%3C|%3E|%00) [NC]
-    RewriteRule ^(.*)$ - [F,L]
-    
-    # Rewrite /create-payment-intent to create-payment-intent.php
-    RewriteRule ^create-payment-intent$ create-payment-intent.php [L]
-</IfModule>
-
-# 5. DISABLE SERVER SIGNATURE
-ServerSignature Off
-
-# 6. SECURITY HEADERS
+# Allow CORS for API (needed for fetch from frontend)
 <IfModule mod_headers.c>
-    Header always set X-Frame-Options "SAMEORIGIN"
-    Header always set X-XSS-Protection "1; mode=block"
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header unset Server
-    Header unset X-Powered-By
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
 </IfModule>
-
-# 7. ALLOW PHP FILES TO EXECUTE (but protect config)
-<FilesMatch "\.php$">
-    Order allow,deny
-    Allow from all
-</FilesMatch>
-
-# 8. BLOCK ACCESS TO SENSITIVE FILES
-<FilesMatch "\.(log|sql|bak|backup|old|tmp|temp|swp|swo)$">
-    Order deny,allow
-    Deny from all
-</FilesMatch>
