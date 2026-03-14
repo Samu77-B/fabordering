@@ -5,19 +5,21 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-// TODO: Fill these with your Hostinger DB credentials
-$DB_HOST = 'localhost';            // Usually 'localhost' on Hostinger
-$DB_NAME = 'your_database_name';   // Your database name from Hostinger
-$DB_USER = 'your_database_user';   // Your MySQL username from Hostinger
-$DB_PASS = 'your_database_password'; // Your MySQL password from Hostinger
-
-// Must match CONFIG.ADMIN_TOKEN in config.js
+// Defaults (overridden by config.local.php on server - not in Git)
+$DB_HOST = 'localhost';
+$DB_NAME = 'your_database_name';
+$DB_USER = 'your_database_user';
+$DB_PASS = 'your_database_password';
 $ADMIN_TOKEN = 'your-secure-admin-token-here';
 
-// Stripe Secret Key - Get from environment variable for security
-// Set this in your server's environment variables or .htaccess SetEnv
-// Example in .htaccess: SetEnv STRIPE_SECRET_KEY "sk_live_..."
-define('STRIPE_SECRET_KEY', getenv('STRIPE_SECRET_KEY') ?: '');
+if (file_exists(__DIR__ . '/config.local.php')) {
+    require_once __DIR__ . '/config.local.php';
+}
+
+// Stripe: env var first, then constant from config.local.php
+if (!defined('STRIPE_SECRET_KEY')) {
+    define('STRIPE_SECRET_KEY', getenv('STRIPE_SECRET_KEY') ?: '');
+}
 
 try {
     $pdo = new PDO(
