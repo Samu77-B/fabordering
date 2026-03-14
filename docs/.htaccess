@@ -1,0 +1,54 @@
+# ============================================
+# DOCUMENTATION DIRECTORY SECURITY .HTACCESS
+# Teas & C's PWA Ordering System
+# ============================================
+
+# 1. DISABLE DIRECTORY BROWSING
+# Prevents listing of documentation files
+Options -Indexes
+
+# 2. ALLOW MARKDOWN FILES TO BE SERVED (if needed)
+# Some servers may serve .md files, but we'll restrict access
+<FilesMatch "\.(md|txt)$">
+    # Option 1: Allow access (if you want docs accessible via web)
+    # Order allow,deny
+    # Allow from all
+    
+    # Option 2: Block access (recommended - docs shouldn't be public)
+    Order deny,allow
+    Deny from all
+</FilesMatch>
+
+# 3. BLOCK EXECUTION OF SCRIPTS
+# Prevent any PHP or other scripts from running
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>
+
+# 4. BLOCK ACCESS TO SENSITIVE FILES
+<FilesMatch "\.(log|sql|bak|backup|old|tmp|temp|swp|swo|htaccess|htpasswd|env)$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>
+
+# 5. DISABLE SERVER SIGNATURE
+ServerSignature Off
+
+# 6. SECURITY HEADERS
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header unset Server
+    Header unset X-Powered-By
+</IfModule>
+
+# 7. PREVENT CROSS-SITE CONTAMINATION
+Options -FollowSymLinks
+Options +SymLinksIfOwnerMatch
+
+# 8. BLOCK MALICIOUS PATTERNS
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} (\.php|\.php3|\.php4|\.php5|\.phtml|\.pl|\.py|\.jsp|\.asp|\.sh|\.cgi) [NC]
+    RewriteRule ^(.*)$ - [F,L]
+</IfModule>
