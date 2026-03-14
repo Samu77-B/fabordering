@@ -11,7 +11,8 @@ This guide sets up deployment so that when you **push to GitHub**, your live sit
 3. In the left sidebar, go to **Git** (under “Advanced” or “Website”)
 4. Click **Create a New Repository** and set:
    - **Repository address:**  
-     `https://github.com/Samu77-B/teas-cs-pwa.git`
+     `https://github.com/Samu77-B/fabordering.git`  
+     (or `git@github.com:Samu77-B/fabordering.git` for private repo with SSH)
    - **Branch:**  
      `master`
    - **Install path (deploy path):**  
@@ -39,7 +40,7 @@ This pulls the latest commit from the `master` branch into the folder that serve
 To deploy automatically whenever you push to GitHub:
 
 1. In Hostinger → **Git** for your site, turn on **Auto-Deployment** and copy the **Webhook URL** Hostinger gives you.
-2. On GitHub: repo **Samu77-B/teas-cs-pwa** → **Settings** → **Webhooks** → **Add webhook**.
+2. On GitHub: repo **Samu77-B/fabordering** → **Settings** → **Webhooks** → **Add webhook**.
 3. Set:
    - **Payload URL:** the Hostinger webhook URL
    - **Content type:** `application/json`

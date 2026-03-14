@@ -2360,12 +2360,15 @@
         let cart = [];
         let currentItem = null;
         
-        // Discount code configuration - Now managed through Admin Settings
-        // Default values (will be overridden by localStorage if admin has set custom values)
+        // Discount code configuration - Always use FABHAIR for customer-facing site
         const DEFAULT_DISCOUNT_CODE = 'FABHAIR';
         const DEFAULT_DISCOUNT_PERCENTAGE = 10;
         
-        // Get discount settings from localStorage or use defaults
+        // Force FABHAIR so display and discount logic are correct (overrides any old localStorage)
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('discountCode', DEFAULT_DISCOUNT_CODE);
+        }
+        
         function getDiscountCode() {
             return localStorage.getItem('discountCode') || DEFAULT_DISCOUNT_CODE;
         }
@@ -3662,7 +3665,11 @@
 
                 } catch (error) {
                     console.error('Error initializing payment:', error);
-                    this.showPaymentError('Failed to initialize payment: ' + error.message);
+                    let msg = 'Failed to initialize payment: ' + error.message;
+                    if (error.message && error.message.includes('404')) {
+                        msg = 'Payment service not found (404). Check that api/create-payment-intent.php is deployed and CONFIG.API_BASE_URL is correct.';
+                    }
+                    this.showPaymentError(msg);
                 }
             }
 
@@ -3672,7 +3679,8 @@
                 if (isLocal) {
                     return 'http://localhost:3001/create-payment-intent';
                 }
-                return `${typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : ''}/create-payment-intent.php`;
+                const base = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL.replace(/\/$/, '') : '';
+                return base ? (base + '/create-payment-intent.php') : '';
             }
 
             async createPaymentIntent(amount) {
