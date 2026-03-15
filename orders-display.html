@@ -297,6 +297,9 @@
             const deliveryHtml = order.deliveryOption
                 ? `<div class="delivery-option">📦 ${order.deliveryOption}</div>`
                 : '';
+            const messageHtml = order.message
+                ? `<div class="order-message" style="margin: 8px 0; padding: 10px; background: rgba(255,140,66,0.15); border-radius: 8px; font-size: 0.95rem;">📝 ${order.message}</div>`
+                : '';
 
             card.innerHTML = `
                 <div class="order-header">
@@ -305,6 +308,7 @@
                 </div>
                 <div class="order-time">${formatTime(order.createdAt)}</div>
                 ${deliveryHtml}
+                ${messageHtml}
                 <div class="order-items">${itemsHtml}</div>
                 <div class="order-total">Total: £${(order.total || 0).toFixed(2)}</div>
                 ${isCompleted
