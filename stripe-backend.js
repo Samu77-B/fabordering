@@ -19,6 +19,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const DISCOUNTS_FILE = path.join(DATA_DIR, 'discounts.json');
+const CATEGORIES_FILE = path.join(DATA_DIR, 'categories.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -112,6 +113,10 @@ function initializeDataFiles() {
     if (!fs.existsSync(DISCOUNTS_FILE)) {
         fs.writeFileSync(DISCOUNTS_FILE, JSON.stringify([], null, 2));
     }
+
+    if (!fs.existsSync(CATEGORIES_FILE)) {
+        fs.writeFileSync(CATEGORIES_FILE, JSON.stringify([], null, 2));
+    }
 }
 
 // Initialize data files
@@ -146,6 +151,8 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
         'https://ordering.teasandcs.com',
         'https://order.teasandcs.com', 
         'https://teasandcs.com',
+        'https://www.teasandcs.com',
+        'https://teasandcs.com/ndo-fabhair',
         'http://localhost:3000',
         'http://localhost:3001',
         'http://localhost:8080',
@@ -158,6 +165,7 @@ app.use(cors({
     origin: (origin, cb) => {
         if (!origin) return cb(null, true);
         if (allowedOrigins.includes(origin)) return cb(null, true);
+        if (origin.endsWith('.vercel.app')) return cb(null, true);
         cb(null, false);
     },
     credentials: true
@@ -166,6 +174,27 @@ app.use(express.json());
 
 // Serve static files (admin dashboard)
 app.use(express.static(__dirname));
+
+// PHP-compatible routes (frontend expects .php extension when API_BASE_URL ends with /api)
+app.get('/api/categories.php', (req, res) => {
+    try {
+        const categories = readDataFile(CATEGORIES_FILE);
+        res.json({ success: true, categories });
+    } catch (error) {
+        console.error('Error fetching categories:', error);
+        res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+});
+
+app.get('/api/products.php', (req, res) => {
+    try {
+        const products = readDataFile(PRODUCTS_FILE);
+        res.json({ success: true, products });
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({ error: 'Failed to fetch products' });
+    }
+});
 
 // Create PaymentIntent endpoint
 app.post('/create-payment-intent', async (req, res) => {
@@ -191,6 +220,26 @@ app.post('/create-payment-intent', async (req, res) => {
             clientSecret: paymentIntent.client_secret,
         });
         
+    } catch (error) {
+        console.error('Error creating payment intent:', error);
+        res.status(500).json({ error: 'Failed to create payment intent' });
+    }
+});
+
+// PHP-compatible payment intent (frontend calls /api/create-payment-intent.php)
+app.post('/api/create-payment-intent.php', async (req, res) => {
+    try {
+        const { amount, currency = 'gbp' } = req.body;
+        if (amount == null || amount === '' || Number(amount) < 0.5) {
+            return res.status(400).json({ error: 'Invalid amount' });
+        }
+        const amountPence = Math.round(Number(amount) * 100);
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amountPence,
+            currency: currency,
+            metadata: { integration_check: 'accept_a_payment' },
+        });
+        res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
         console.error('Error creating payment intent:', error);
         res.status(500).json({ error: 'Failed to create payment intent' });
@@ -426,7 +475,8 @@ app.delete('/api/admin/orders/:id', authenticateAdmin, (req, res) => {
 });
 
 // Create new order (called from frontend when payment succeeds)
-app.post('/api/orders', (req, res) => {
+// Also handle /api/api/orders (frontend uses API_BASE_URL + '/api/orders' where base ends with /api)
+const createOrderHandler = (req, res) => {
     try {
         const orders = readDataFile(ORDERS_FILE);
         const { items, total, customerInfo, paymentIntentId, chairNumber } = req.body;
@@ -456,7 +506,9 @@ app.post('/api/orders', (req, res) => {
         console.error('Error creating order:', error);
         res.status(500).json({ error: 'Failed to create order' });
     }
-});
+};
+app.post('/api/orders', createOrderHandler);
+app.post('/api/api/orders', createOrderHandler);
 
 // Get products for frontend
 app.get('/api/products', (req, res) => {
