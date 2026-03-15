@@ -36,7 +36,8 @@ function updateCategorySubtitles(categories) {
         'everyday-teas': 'everyday-teas',
         'matcha-teas': 'matcha-teas',
         'specialties': 'specialties',
-        'chocolate': 'chocolate'
+        'chocolate': 'chocolate',
+        'tea-lattes': 'specialties'
     };
     
     categories.forEach(category => {
@@ -92,7 +93,9 @@ function updateProductHTML(products) {
         'tea': 'everyday-teas',
         'matcha': 'matcha-teas',
         'special': 'specialties',
-        'chocolate': 'chocolate'
+        'specialty': 'specialties',
+        'chocolate': 'chocolate',
+        'tea-lattes': 'specialties'
     };
     
     // Group products by category
