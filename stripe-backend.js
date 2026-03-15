@@ -11,6 +11,10 @@ const path = require('path');
 // Load environment variables
 require('dotenv').config();
 
+if (!process.env.STRIPE_SECRET_KEY) {
+    console.error('ERROR: STRIPE_SECRET_KEY is not set. Add it in Railway Variables.');
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -199,6 +203,10 @@ app.get('/api/products.php', (req, res) => {
 // Create PaymentIntent endpoint
 app.post('/create-payment-intent', async (req, res) => {
     try {
+        if (!process.env.STRIPE_SECRET_KEY) {
+            console.error('STRIPE_SECRET_KEY missing in Railway Variables');
+            return res.status(500).json({ error: 'Payment server not configured. Check Railway logs.' });
+        }
         const { amount, currency = 'gbp' } = req.body;
         
         // Validate amount (frontend sends amount in pounds, e.g. 5.50)
@@ -229,6 +237,10 @@ app.post('/create-payment-intent', async (req, res) => {
 // PHP-compatible payment intent (frontend calls /api/create-payment-intent.php)
 app.post('/api/create-payment-intent.php', async (req, res) => {
     try {
+        if (!process.env.STRIPE_SECRET_KEY) {
+            console.error('STRIPE_SECRET_KEY missing in Railway Variables');
+            return res.status(500).json({ error: 'Payment server not configured. Check Railway logs.' });
+        }
         const { amount, currency = 'gbp' } = req.body;
         if (amount == null || amount === '' || Number(amount) < 0.5) {
             return res.status(400).json({ error: 'Invalid amount' });
@@ -241,7 +253,7 @@ app.post('/api/create-payment-intent.php', async (req, res) => {
         });
         res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
-        console.error('Error creating payment intent:', error);
+        console.error('Payment intent error:', error.message || error);
         res.status(500).json({ error: 'Failed to create payment intent' });
     }
 });
