@@ -3258,16 +3258,19 @@
             }
         });
 
-        // Service Worker Registration (v10 = no fetch intercept, fixes payment on mobile)
+        // Service Worker: UNREGISTER to fix payment "Load failed" on mobile
+        // (SW was intercepting fetches; re-enable later if needed for offline)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=10')
-                    .then(function(registration) {
-                        console.log('ServiceWorker registration successful');
-                    })
-                    .catch(function(err) {
-                        console.log('ServiceWorker registration failed');
-                    });
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    if (registrations.length) {
+                        registrations.forEach(function(r) { r.unregister(); });
+                        if (!sessionStorage.getItem('sw-cleared')) {
+                            sessionStorage.setItem('sw-cleared', '1');
+                            window.location.reload();
+                        }
+                    }
+                });
             });
         }
 
