@@ -3,6 +3,13 @@
 
 Options -Indexes
 
+# Prevent caching of HTML - ensures users get latest version (fixes stuck SW)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    </FilesMatch>
+</IfModule>
+
 # Protect sensitive config (DB credentials, env)
 <FilesMatch "^(config\.php|config\.local\.php|\.htaccess|\.htpasswd|\.env|\.git)$">
     Order deny,allow

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
     <title>Teas & C's - Ordering</title>
     
     <!-- PWA Meta Tags -->
@@ -3857,7 +3859,8 @@
 
             showPaymentError(message) {
                 const errorElement = document.getElementById('paymentError');
-                errorElement.textContent = message;
+                const isLoadFailed = message && (message.includes('Load failed') || message.includes('respondWith'));
+                errorElement.innerHTML = message + (isLoadFailed ? ' <a href="fix-payment.html" style="display:block;margin-top:10px;color:#6B7A5A;font-weight:600;">Tap here to fix</a>' : '');
                 errorElement.style.display = 'block';
                 
                 // Hide success message if shown

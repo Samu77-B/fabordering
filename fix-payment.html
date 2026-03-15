@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store">
+    <title>Fix Payment - Teas & C's</title>
+    <style>
+        body { font-family: system-ui; max-width: 400px; margin: 40px auto; padding: 20px; text-align: center; }
+        h1 { color: #6B7A5A; }
+        .btn { display: inline-block; margin: 20px 0; padding: 16px 32px; background: #6B7A5A; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
+        .btn:hover { background: #5a6b4a; }
+        p { color: #666; }
+    </style>
+</head>
+<body>
+    <h1>Fix Payment Issue</h1>
+    <p>This will clear the service worker and reload the ordering page.</p>
+    <a href="#" class="btn" id="fixBtn">Fix &amp; Continue</a>
+    <script>
+        document.getElementById('fixBtn').onclick = function(e) {
+            e.preventDefault();
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    return Promise.all(regs.map(function(r) { return r.unregister(); }));
+                }).then(function() {
+                    window.location.href = './index.html?fixed=1';
+                });
+            } else {
+                window.location.href = './index.html?fixed=1';
+            }
+        };
+    </script>
+</body>
+</html>

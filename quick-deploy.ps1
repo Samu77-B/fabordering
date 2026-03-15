@@ -33,6 +33,7 @@ $filesToCopy = @(
     "sw.js",
     "admin.html",
     "orders-display.html",
+    "fix-payment.html",
     "footer-component.html",
     "stripe-backend.js",
     "package.json"
