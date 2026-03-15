@@ -3258,10 +3258,10 @@
             }
         });
 
-        // Service Worker Registration
+        // Service Worker Registration (v10 = no fetch intercept, fixes payment on mobile)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js')
+                navigator.serviceWorker.register('sw.js?v=10')
                     .then(function(registration) {
                         console.log('ServiceWorker registration successful');
                     })
