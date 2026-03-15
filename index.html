@@ -470,6 +470,17 @@
             text-decoration: none;
         }
         .payment-fix-btn:hover { background: #5a6b4a; color: white; }
+        .payment-fix-btn.fixed {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+            max-width: 340px;
+            z-index: 9999;
+            margin: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
 
         .payment-success {
             background: #d4edda;
@@ -2298,7 +2309,7 @@
                     </div>
                     
                     <div id="paymentError" class="payment-error" style="display: none;"></div>
-                    <a href="fix-payment.html" id="paymentFixLink" class="payment-fix-btn" style="display: none;">Fix payment issue</a>
+                    <a href="fix-payment.html" id="paymentFixLink" class="payment-fix-btn fixed" style="display: none;">Fix payment issue</a>
                     <div id="paymentSuccess" class="payment-success" style="display: none;"></div>
                     
                     <form id="payment-form">
@@ -3873,7 +3884,7 @@
             showPaymentError(message) {
                 const errorElement = document.getElementById('paymentError');
                 const fixLink = document.getElementById('paymentFixLink');
-                errorElement.textContent = message;
+                errorElement.textContent = message + ' Tap the green Fix button at the bottom.';
                 errorElement.style.display = 'block';
                 if (fixLink) fixLink.style.display = 'block';
                 
