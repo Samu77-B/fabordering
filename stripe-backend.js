@@ -491,7 +491,7 @@ app.delete('/api/admin/orders/:id', authenticateAdmin, (req, res) => {
 const createOrderHandler = (req, res) => {
     try {
         const orders = readDataFile(ORDERS_FILE);
-        const { items, total, customerInfo, paymentIntentId, chairNumber } = req.body;
+        const { items, total, customerInfo, paymentIntentId, chairNumber, deliveryOption } = req.body;
         
         const newId = Math.max(...orders.map(o => o.id), 0) + 1;
         const newOrder = {
@@ -501,6 +501,7 @@ const createOrderHandler = (req, res) => {
             customerInfo,
             paymentIntentId,
             chairNumber: chairNumber || 'Not specified',
+            deliveryOption: deliveryOption || '',
             status: 'pending',
             createdAt: new Date().toISOString()
         };

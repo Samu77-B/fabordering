@@ -8,6 +8,11 @@
   status = 200
 
 [[redirects]]
+  from = "/orders-display"
+  to = "/orders-display.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

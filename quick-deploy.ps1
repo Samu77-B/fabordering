@@ -32,6 +32,7 @@ $filesToCopy = @(
     "manifest.json", 
     "sw.js",
     "admin.html",
+    "orders-display.html",
     "footer-component.html",
     "stripe-backend.js",
     "package.json"

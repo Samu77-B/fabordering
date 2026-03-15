@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Teas & C's - Barista Orders</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1d21;
+            color: #e8eaed;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 40px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0 24px;
+            border-bottom: 2px solid #2d3238;
+        }
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .header .sub {
+            font-size: 0.95rem;
+            color: #9aa0a6;
+            margin-top: 6px;
+        }
+        .pending-count {
+            display: inline-block;
+            background: #ea4335;
+            color: white;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 1.1rem;
+        }
+        .pending-count.zero {
+            background: #34a853;
+        }
+        .last-updated {
+            font-size: 0.8rem;
+            color: #5f6368;
+            margin-top: 8px;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #9aa0a6;
+            margin: 24px 0 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .order-card {
+            background: #25282d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid #6B7A5A;
+            transition: transform 0.2s, opacity 0.3s;
+        }
+        .order-card.new-order {
+            animation: pulse 2s ease-out;
+        }
+        .order-card.completed {
+            opacity: 0.5;
+            border-left-color: #34a853;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .order-id {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .chair-badge {
+            background: #6B7A5A;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .order-time {
+            font-size: 0.85rem;
+            color: #9aa0a6;
+            margin-bottom: 12px;
+        }
+        .delivery-option {
+            font-size: 0.9rem;
+            color: #FF8C42;
+            margin-bottom: 8px;
+        }
+        .order-items {
+            background: #1a1d21;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 1rem;
+        }
+        .order-item:not(:last-child) {
+            border-bottom: 1px solid #2d3238;
+        }
+        .order-total {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+        .btn-complete {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: #34a853;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-complete:hover, .btn-complete:active {
+            background: #2d8e47;
+        }
+        .btn-complete:disabled {
+            background: #5f6368;
+            cursor: not-allowed;
+        }
+        .status-done {
+            text-align: center;
+            padding: 12px;
+            color: #34a853;
+            font-weight: 600;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: #9aa0a6;
+            font-size: 1.1rem;
+        }
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .error-banner {
+            background: #ea4335;
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .error-banner.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Teas & C's Orders</h1>
+            <p class="sub">Barista display</p>
+            <div class="pending-count" id="pendingCount">0 pending</div>
+            <p class="last-updated" id="lastUpdated">—</p>
+        </header>
+
+        <div class="error-banner hidden" id="errorBanner">
+            Cannot connect to server. Retrying…
+        </div>
+
+        <div class="section-title" id="pendingTitle">Pending orders</div>
+        <div id="pendingOrders"></div>
+
+        <div class="section-title" id="completedTitle">Recently completed</div>
+        <div id="completedOrders"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        const API_BASE = typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : 'http://localhost:3001';
+        const ADMIN_TOKEN = typeof CONFIG !== 'undefined' ? CONFIG.ADMIN_TOKEN : 'admin-token-2024';
+        const POLL_INTERVAL = 10000; // 10 seconds
+        const COMPLETED_VISIBLE = 5; // Show last 5 completed
+
+        let lastOrderIds = new Set();
+        let pollTimer = null;
+
+        async function fetchOrders() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/orders`, {
+                    headers: { 'Authorization': `Bearer ${ADMIN_TOKEN}` }
+                });
+                if (!res.ok) throw new Error(res.status);
+                return await res.json();
+            } catch (e) {
+                throw e;
+            }
+        }
+
+        async function markComplete(orderId) {
+            const btn = document.querySelector(`[data-order-id="${orderId}"]`);
+            if (btn) btn.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/admin/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${ADMIN_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'completed' })
+                });
+                if (!res.ok) throw new Error(res.status);
+                playCompleteSound();
+                loadOrders();
+            } catch (e) {
+                if (btn) btn.disabled = false;
+                showError(true);
+            }
+        }
+
+        function playNewOrderSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.setValueAtTime(600, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.3);
+            } catch (_) {}
+        }
+
+        function playCompleteSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(523, ctx.currentTime);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.15);
+            } catch (_) {}
+        }
+
+        function formatTime(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function renderOrder(order, isCompleted) {
+            const card = document.createElement('div');
+            card.className = 'order-card' + (isCompleted ? ' completed' : '');
+            const isNew = !lastOrderIds.has(order.id);
+            if (isNew && !isCompleted) card.classList.add('new-order');
+
+            const itemsHtml = (order.items || []).map(i =>
+                `<div class="order-item"><span>${i.name} × ${i.quantity}</span><span>£${((i.price || 0) * (i.quantity || 1)).toFixed(2)}</span></div>`
+            ).join('');
+
+            const deliveryHtml = order.deliveryOption
+                ? `<div class="delivery-option">📦 ${order.deliveryOption}</div>`
+                : '';
+
+            card.innerHTML = `
+                <div class="order-header">
+                    <span class="order-id">Order #${order.id}</span>
+                    <span class="chair-badge">🪑 ${order.chairNumber || 'Not specified'}</span>
+                </div>
+                <div class="order-time">${formatTime(order.createdAt)}</div>
+                ${deliveryHtml}
+                <div class="order-items">${itemsHtml}</div>
+                <div class="order-total">Total: £${(order.total || 0).toFixed(2)}</div>
+                ${isCompleted
+                    ? '<div class="status-done">✓ Done</div>'
+                    : `<button class="btn-complete" data-order-id="${order.id}" onclick="markComplete(${order.id})">Mark complete</button>`
+                }
+            `;
+            return card;
+        }
+
+        function showError(show) {
+            const el = document.getElementById('errorBanner');
+            el.classList.toggle('hidden', !show);
+        }
+
+        async function loadOrders() {
+            try {
+                const orders = await fetchOrders();
+                showError(false);
+
+                const pending = (orders || []).filter(o => o.status !== 'completed');
+                const completed = (orders || []).filter(o => o.status === 'completed').slice(-COMPLETED_VISIBLE).reverse();
+
+                const newIds = new Set(pending.map(o => o.id));
+                const hadNew = pending.some(o => !lastOrderIds.has(o.id));
+                lastOrderIds = new Set(orders.map(o => o.id));
+
+                if (hadNew && pending.length > 0) playNewOrderSound();
+
+                document.getElementById('pendingCount').textContent = `${pending.length} pending`;
+                document.getElementById('pendingCount').classList.toggle('zero', pending.length === 0);
+                document.getElementById('lastUpdated').textContent = `Updated ${formatTime(new Date().toISOString())}`;
+
+                const pendingEl = document.getElementById('pendingOrders');
+                pendingEl.innerHTML = '';
+                if (pending.length === 0) {
+                    pendingEl.innerHTML = '<div class="empty-state"><div class="icon">☕</div>No pending orders</div>';
+                } else {
+                    pending.forEach(o => pendingEl.appendChild(renderOrder(o, false)));
+                }
+
+                const completedEl = document.getElementById('completedOrders');
+                completedEl.innerHTML = '';
+                if (completed.length === 0) {
+                    completedEl.innerHTML = '<div class="empty-state"><div class="icon">—</div>No completed orders yet</div>';
+                } else {
+                    completed.forEach(o => completedEl.appendChild(renderOrder(o, true)));
+                }
+            } catch (e) {
+                showError(true);
+                console.error('Failed to load orders:', e);
+            }
+        }
+
+        function startPolling() {
+            loadOrders();
+            pollTimer = setInterval(loadOrders, POLL_INTERVAL);
+        }
+
+        document.addEventListener('DOMContentLoaded', startPolling);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) clearInterval(pollTimer);
+            else startPolling();
+        });
+    </script>
+</body>
+</html>
