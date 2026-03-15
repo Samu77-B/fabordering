@@ -458,6 +458,18 @@
             margin: 15px 0;
             border: 1px solid #f5c6cb;
         }
+        .payment-fix-btn {
+            display: block;
+            background: #6B7A5A;
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            border-radius: 10px;
+            margin: 10px 0 15px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .payment-fix-btn:hover { background: #5a6b4a; color: white; }
 
         .payment-success {
             background: #d4edda;
@@ -2286,6 +2298,7 @@
                     </div>
                     
                     <div id="paymentError" class="payment-error" style="display: none;"></div>
+                    <a href="fix-payment.html" id="paymentFixLink" class="payment-fix-btn" style="display: none;">Fix payment issue</a>
                     <div id="paymentSuccess" class="payment-success" style="display: none;"></div>
                     
                     <form id="payment-form">
@@ -3859,9 +3872,10 @@
 
             showPaymentError(message) {
                 const errorElement = document.getElementById('paymentError');
-                const isLoadFailed = message && (message.includes('Load failed') || message.includes('respondWith'));
-                errorElement.innerHTML = message + (isLoadFailed ? ' <a href="fix-payment.html" style="display:block;margin-top:10px;color:#6B7A5A;font-weight:600;">Tap here to fix</a>' : '');
+                const fixLink = document.getElementById('paymentFixLink');
+                errorElement.textContent = message;
                 errorElement.style.display = 'block';
+                if (fixLink) fixLink.style.display = 'block';
                 
                 // Hide success message if shown
                 document.getElementById('paymentSuccess').style.display = 'none';
@@ -3875,8 +3889,10 @@
                 successElement.textContent = message;
                 successElement.style.display = 'block';
                 
-                // Hide error message if shown
+                // Hide error message and fix link if shown
                 document.getElementById('paymentError').style.display = 'none';
+                const fixLink = document.getElementById('paymentFixLink');
+                if (fixLink) fixLink.style.display = 'none';
                 
                 // Re-enable payment button
                 this.setLoading(false);
