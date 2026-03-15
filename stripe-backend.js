@@ -170,6 +170,7 @@ app.use(cors({
         if (!origin) return cb(null, true);
         if (allowedOrigins.includes(origin)) return cb(null, true);
         if (origin.endsWith('.vercel.app')) return cb(null, true);
+        if (origin === 'https://teasandcs.com' || origin.startsWith('https://teasandcs.com') || origin.startsWith('http://teasandcs.com')) return cb(null, true);
         cb(null, false);
     },
     credentials: true
