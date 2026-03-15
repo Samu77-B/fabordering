@@ -300,7 +300,7 @@ function authenticateAdmin(req, res, next) {
     
     const token = authHeader.substring(7);
     // Simple token validation (in production, use JWT or similar)
-    const adminToken = process.env.ADMIN_TOKEN || 'admin-token-2024';
+    const adminToken = process.env.ADMIN_TOKEN || 'harvest-bean-gauge-x7K9mP2q';
     if (token !== adminToken) {
         return res.status(401).json({ error: 'Invalid token' });
     }
