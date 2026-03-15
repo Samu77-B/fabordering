@@ -216,13 +216,12 @@ app.post('/create-payment-intent', async (req, res) => {
         }
         const amountPence = Math.round(Number(amount) * 100);
         
-        // Create PaymentIntent
+        // Create PaymentIntent (automatic_payment_methods enables Apple Pay, Google Pay, etc.)
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: amountPence, // Stripe expects pence
+            amount: amountPence,
             currency: currency,
-            metadata: {
-                integration_check: 'accept_a_payment',
-            },
+            automatic_payment_methods: { enabled: true },
+            metadata: { integration_check: 'accept_a_payment' },
         });
         
         res.json({
@@ -250,6 +249,7 @@ app.post('/api/create-payment-intent.php', async (req, res) => {
         const paymentIntent = await stripe.paymentIntents.create({
             amount: amountPence,
             currency: currency,
+            automatic_payment_methods: { enabled: true },
             metadata: { integration_check: 'accept_a_payment' },
         });
         res.json({ clientSecret: paymentIntent.client_secret });
