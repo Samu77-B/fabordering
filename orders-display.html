@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Teas & C's - Barista Orders</title>
+    <title>Teas &amp; C's - Barista Orders</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
@@ -186,7 +186,7 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>Teas & C's Orders</h1>
+            <h1>Teas &amp; C's Orders</h1>
             <p class="sub">Barista display</p>
             <div class="pending-count" id="pendingCount">0 pending</div>
             <p class="last-updated" id="lastUpdated">—</p>
@@ -287,6 +287,12 @@
         function renderOrder(order, isCompleted) {
             // Normalise different backend shapes (Node JSON file vs PHP/MySQL API)
             const normalised = (() => {
+                const parseMoney = (val) => {
+                    if (val === null || val === undefined || val === '') return null;
+                    const n = Number(val);
+                    return Number.isNaN(n) ? null : n;
+                };
+
                 const id = order.id != null ? order.id : (order.order_id || '');
 
                 // Items may already be an array or a JSON string from the DB
@@ -303,8 +309,8 @@
                 }
 
                 const total =
-                    (typeof order.total === 'number' ? order.total : null) ??
-                    (typeof order.total_amount === 'number' ? order.total_amount : null) ??
+                    parseMoney(order.total) ??
+                    parseMoney(order.total_amount) ??
                     0;
 
                 const chairNumber =
@@ -335,9 +341,14 @@
             const isNew = !lastOrderIds.has(normalised.id);
             if (isNew && !isCompleted) card.classList.add('new-order');
 
-            const itemsHtml = normalised.items.map(i =>
-                `<div class="order-item"><span>${i.name} × ${i.quantity}</span><span>£${((i.price || 0) * (i.quantity || 1)).toFixed(2)}</span></div>`
-            ).join('');
+            const itemsHtml = normalised.items.map(i => {
+                const name = i.name || i.item_name || i.title || 'Item';
+                const quantity = i.quantity || i.qty || 1;
+                const unitPriceRaw = i.price ?? i.unit_price ?? i.price_per_item ?? 0;
+                const unitPrice = Number(unitPriceRaw) || 0;
+                const lineTotal = unitPrice * quantity;
+                return `<div class="order-item"><span>${name} × ${quantity}</span><span>£${lineTotal.toFixed(2)}</span></div>`;
+            }).join('');
 
             const deliveryHtml = normalised.deliveryOption
                 ? `<div class="delivery-option">📦 ${normalised.deliveryOption}</div>`
