@@ -213,9 +213,26 @@
         let lastOrderIds = new Set();
         let pollTimer = null;
 
+        // Like index.html, avoid any stale Service Worker affecting this page.
+        // (Mobile can be picky with SW + API calls.)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    if (registrations && registrations.length) {
+                        registrations.forEach(function(r) { r.unregister(); });
+                        if (!sessionStorage.getItem('sw-cleared-orders-display')) {
+                            sessionStorage.setItem('sw-cleared-orders-display', '1');
+                            window.location.reload();
+                        }
+                    }
+                }).catch(function() {});
+            });
+        }
+
         async function fetchOrders() {
             const res = await fetch(`${API_BASE}/admin/orders`, {
-                headers: { 'Authorization': `Bearer ${ADMIN_TOKEN}` }
+                headers: { 'Authorization': `Bearer ${ADMIN_TOKEN}` },
+                cache: 'no-store'
             });
             if (!res.ok) {
                 const err = new Error(res.status === 401 ? 'Unauthorized (check ADMIN_TOKEN)' : `HTTP ${res.status}`);
@@ -236,7 +253,8 @@
                         'Authorization': `Bearer ${ADMIN_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ status: 'completed' })
+                    body: JSON.stringify({ status: 'completed' }),
+                    cache: 'no-store'
                 });
                 if (!res.ok) throw new Error(res.status);
                 playCompleteSound();
