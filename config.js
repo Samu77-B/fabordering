@@ -12,7 +12,7 @@ window.CONFIG = {
     
     // Admin Configuration
     // Create a secure token for admin access
-    ADMIN_TOKEN: 'harvest-bean-gauge-x7K9mP2q',
+    ADMIN_TOKEN: ' ',
     
     // Environment
     ENVIRONMENT: 'production'

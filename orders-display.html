@@ -285,35 +285,80 @@
         }
 
         function renderOrder(order, isCompleted) {
+            // Normalise different backend shapes (Node JSON file vs PHP/MySQL API)
+            const normalised = (() => {
+                const id = order.id != null ? order.id : (order.order_id || '');
+
+                // Items may already be an array or a JSON string from the DB
+                let items = order.items;
+                if (typeof items === 'string') {
+                    try {
+                        items = JSON.parse(items);
+                    } catch {
+                        items = [];
+                    }
+                }
+                if (!Array.isArray(items)) {
+                    items = [];
+                }
+
+                const total =
+                    (typeof order.total === 'number' ? order.total : null) ??
+                    (typeof order.total_amount === 'number' ? order.total_amount : null) ??
+                    0;
+
+                const chairNumber =
+                    order.chairNumber ||
+                    order.chair_number ||
+                    'Not specified';
+
+                const deliveryOption =
+                    order.deliveryOption ||
+                    order.delivery_option ||
+                    '';
+
+                const message =
+                    order.message ||
+                    order.notes ||
+                    '';
+
+                const createdAt =
+                    order.createdAt ||
+                    order.created_at ||
+                    null;
+
+                return { id, items, total, chairNumber, deliveryOption, message, createdAt };
+            })();
+
             const card = document.createElement('div');
             card.className = 'order-card' + (isCompleted ? ' completed' : '');
-            const isNew = !lastOrderIds.has(order.id);
+            const isNew = !lastOrderIds.has(normalised.id);
             if (isNew && !isCompleted) card.classList.add('new-order');
 
-            const itemsHtml = (order.items || []).map(i =>
+            const itemsHtml = normalised.items.map(i =>
                 `<div class="order-item"><span>${i.name} × ${i.quantity}</span><span>£${((i.price || 0) * (i.quantity || 1)).toFixed(2)}</span></div>`
             ).join('');
 
-            const deliveryHtml = order.deliveryOption
-                ? `<div class="delivery-option">📦 ${order.deliveryOption}</div>`
+            const deliveryHtml = normalised.deliveryOption
+                ? `<div class="delivery-option">📦 ${normalised.deliveryOption}</div>`
                 : '';
-            const messageHtml = order.message
-                ? `<div class="order-message" style="margin: 8px 0; padding: 10px; background: rgba(255,140,66,0.15); border-radius: 8px; font-size: 0.95rem;">📝 ${order.message}</div>`
+            const messageHtml = normalised.message
+                ? `<div class="order-message" style="margin: 8px 0; padding: 10px; background: rgba(255,140,66,0.15); border-radius: 8px; font-size: 0.95rem;">📝 ${normalised.message}</div>`
                 : '';
 
             card.innerHTML = `
                 <div class="order-header">
-                    <span class="order-id">Order #${order.id}</span>
-                    <span class="chair-badge">🪑 ${order.chairNumber || 'Not specified'}</span>
+                    <span class="order-id">Order #${normalised.id}</span>
+                    <span class="chair-badge">🪑 ${normalised.chairNumber}</span>
                 </div>
-                <div class="order-time">${formatTime(order.createdAt)}</div>
+                <div class="order-time">${formatTime(normalised.createdAt)}</div>
                 ${deliveryHtml}
                 ${messageHtml}
                 <div class="order-items">${itemsHtml}</div>
-                <div class="order-total">Total: £${(order.total || 0).toFixed(2)}</div>
+                <div class="order-total">Total: £${(normalised.total || 0).toFixed(2)}</div>
                 ${isCompleted
                     ? '<div class="status-done">✓ Done</div>'
-                    : `<button class="btn-complete" data-order-id="${order.id}" onclick="markComplete(${order.id})">Mark complete</button>`
+                : `<button class="btn-complete" data-order-id="${normalised.id}" onclick="markComplete(${normalised.id})">Mark complete</button>`
                 }
             `;
             return card;
