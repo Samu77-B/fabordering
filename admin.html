@@ -849,6 +849,31 @@
             password: 'teasandcs2024' // Change this to a secure password
         };
 
+        /** Read JSON from fetch; if server returns HTML/PHP, show a clear config hint. */
+        async function parseResponseJson(response, contextLabel) {
+            const text = await response.text();
+            const trimmed = (text || '').trim();
+            if (!trimmed) {
+                if (!response.ok) {
+                    throw new Error((contextLabel || 'Request') + ' failed: empty body (HTTP ' + response.status + ')');
+                }
+                return null;
+            }
+            if (trimmed.charAt(0) === '<') {
+                const url = response.url || '(unknown URL)';
+                console.error((contextLabel || 'API') + ' — non-JSON response from:', url);
+                throw new Error(
+                    (contextLabel || 'API') + ' returned HTML/PHP instead of JSON. ' +
+                    'Set CONFIG.API_BASE_URL in config.js to your Railway API (…/up.railway.app/api), not your Hostinger PHP folder.'
+                );
+            }
+            try {
+                return JSON.parse(trimmed);
+            } catch (e) {
+                throw new Error((contextLabel || 'API') + ' invalid JSON: ' + e.message);
+            }
+        }
+
         let currentUser = null;
         let products = [];
         let discounts = [];
@@ -1310,30 +1335,20 @@
             }
 
             try {
-                let response;
-                if (editId) {
-                    // Update existing category
-                    response = await fetch(`${CONFIG.API_BASE_URL}/categories.php?id=${editId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${CONFIG.ADMIN_TOKEN}`
-                        },
-                        body: JSON.stringify(categoryData)
-                    });
-                } else {
-                    // Create new category
-                    response = await fetch(`${CONFIG.API_BASE_URL}/categories.php`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${CONFIG.ADMIN_TOKEN}`
-                        },
-                        body: JSON.stringify(categoryData)
-                    });
-                }
+                const body = editId
+                    ? JSON.stringify({ id: parseInt(editId, 10), ...categoryData })
+                    : JSON.stringify(categoryData);
+                const response = await fetch(`${CONFIG.API_BASE_URL}/admin/categories`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${CONFIG.ADMIN_TOKEN}`
+                    },
+                    body,
+                    cache: 'no-store'
+                });
 
-                const result = await response.json();
+                const result = await parseResponseJson(response, 'Save category');
                 
                 if (response.ok && result.success) {
                     showNotification(editId ? 'Category updated successfully!' : 'Category added successfully!', 'success');
@@ -1354,15 +1369,15 @@
 
             if (confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
                 try {
-                    const response = await fetch(`${CONFIG.API_BASE_URL}/categories.php?id=${id}`, {
+                    const response = await fetch(`${CONFIG.API_BASE_URL}/admin/categories/${id}`, {
                         method: 'DELETE',
                         headers: {
-                            'Content-Type': 'application/json',
                             'Authorization': `Bearer ${CONFIG.ADMIN_TOKEN}`
-                        }
+                        },
+                        cache: 'no-store'
                     });
 
-                    const result = await response.json();
+                    const result = await parseResponseJson(response, 'Delete category');
                     
                     if (response.ok && result.success) {
                         showNotification('Category deleted successfully!', 'success');
@@ -1940,36 +1955,11 @@
     
     <!-- Simple Database Integration Script -->
     <script>
-        /** Read JSON from fetch; if server returns HTML/PHP, show a clear config hint. */
-        async function parseResponseJson(response, contextLabel) {
-            const text = await response.text();
-            const trimmed = (text || '').trim();
-            if (!trimmed) {
-                if (!response.ok) {
-                    throw new Error((contextLabel || 'Request') + ' failed: empty body (HTTP ' + response.status + ')');
-                }
-                return null;
-            }
-            if (trimmed.charAt(0) === '<') {
-                const url = response.url || '(unknown URL)';
-                console.error(contextLabel + ' — non-JSON response from:', url);
-                throw new Error(
-                    (contextLabel || 'API') + ' returned HTML/PHP instead of JSON. ' +
-                    'Set CONFIG.API_BASE_URL in config.js on this site to your Railway API (…/up.railway.app/api), not your Hostinger PHP /api folder.'
-                );
-            }
-            try {
-                return JSON.parse(trimmed);
-            } catch (e) {
-                throw new Error((contextLabel || 'API') + ' invalid JSON: ' + e.message);
-            }
-        }
-
         // Load categories from database
         async function loadCategoriesFromDatabase() {
             try {
                 console.log('Loading categories from database...');
-                const response = await fetch(`${CONFIG.API_BASE_URL}/categories.php`, {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/admin/categories`, {
                     headers: {
                         'Authorization': `Bearer ${CONFIG.ADMIN_TOKEN}`
                     },

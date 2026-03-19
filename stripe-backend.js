@@ -370,6 +370,97 @@ app.delete('/api/admin/products/:id', authenticateAdmin, (req, res) => {
     }
 });
 
+// Admin categories (JSON file — same auth as products; avoids Hostinger categories.php)
+app.get('/api/admin/categories', authenticateAdmin, (req, res) => {
+    try {
+        let categories = readDataFile(CATEGORIES_FILE);
+        if (!Array.isArray(categories)) {
+            categories = [];
+        }
+        res.json({ success: true, categories });
+    } catch (error) {
+        console.error('Error fetching categories:', error);
+        res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+});
+
+app.post('/api/admin/categories', authenticateAdmin, (req, res) => {
+    try {
+        let categories = readDataFile(CATEGORIES_FILE);
+        if (!Array.isArray(categories)) {
+            categories = [];
+        }
+        const { id, name, slug, description, subtitle, icon, order, active, subcategories } = req.body;
+        if (id != null) {
+            const categoryId = parseInt(id, 10);
+            const idx = categories.findIndex(c => c.id === categoryId);
+            if (idx === -1) {
+                return res.status(404).json({ error: 'Category not found' });
+            }
+            categories[idx] = {
+                ...categories[idx],
+                name,
+                slug,
+                description: description || '',
+                subtitle: subtitle != null ? subtitle : categories[idx].subtitle,
+                icon: icon != null ? icon : categories[idx].icon,
+                order: order != null ? order : categories[idx].order,
+                active: active !== false
+            };
+            if (subcategories !== undefined) {
+                categories[idx].subcategories = subcategories;
+            }
+        } else {
+            const newId = Math.max(0, ...categories.map(c => c.id || 0)) + 1;
+            const cat = {
+                id: newId,
+                name,
+                slug,
+                description: description || '',
+                subtitle: subtitle || '',
+                icon: icon || '📁',
+                order: order != null ? order : newId,
+                active: active !== false,
+                productCount: 0
+            };
+            if (subcategories) {
+                cat.subcategories = subcategories;
+            }
+            categories.push(cat);
+        }
+        if (writeDataFile(CATEGORIES_FILE, categories)) {
+            res.json({ success: true, message: 'Category saved successfully' });
+        } else {
+            res.status(500).json({ error: 'Failed to save category' });
+        }
+    } catch (error) {
+        console.error('Error saving category:', error);
+        res.status(500).json({ error: 'Failed to save category' });
+    }
+});
+
+app.delete('/api/admin/categories/:id', authenticateAdmin, (req, res) => {
+    try {
+        let categories = readDataFile(CATEGORIES_FILE);
+        if (!Array.isArray(categories)) {
+            categories = [];
+        }
+        const categoryId = parseInt(req.params.id, 10);
+        const filtered = categories.filter(c => c.id !== categoryId);
+        if (filtered.length === categories.length) {
+            return res.status(404).json({ error: 'Category not found' });
+        }
+        if (writeDataFile(CATEGORIES_FILE, filtered)) {
+            res.json({ success: true, message: 'Category deleted successfully' });
+        } else {
+            res.status(500).json({ error: 'Failed to delete category' });
+        }
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        res.status(500).json({ error: 'Failed to delete category' });
+    }
+});
+
 // Get all discounts
 app.get('/api/admin/discounts', authenticateAdmin, (req, res) => {
     try {
