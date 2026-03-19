@@ -1,5 +1,7 @@
 # 🚀 T&C PWA Deployment Ready!
 
+> **Note:** Production uses **Railway** for the Node backend (and often the static PWA files too). Netlify steps below are optional if you host the HTML elsewhere.
+
 Your app is now ready for deployment to Netlify + Railway. Here's what I've set up:
 
 ## 📁 Files Created/Updated

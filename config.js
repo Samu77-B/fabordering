@@ -1,9 +1,13 @@
-// Configuration for Hostinger deployment
-// Production: https://teasandcs.com/ndo-fabhair/
+// Configuration for production
+// IMPORTANT: API_BASE_URL must be your Railway Node API root, ending in /api
+// (e.g. https://YOUR-SERVICE.up.railway.app/api).
+// If you point this at https://teasandcs.com/.../api (Hostinger PHP), admin will get raw "<?php ..." and JSON.parse will fail.
+// Backend API runs on Railway (see API_BASE_URL). Static PWA may be served from Railway and/or your domain.
+// Production path example: https://teasandcs.com/ndo-fabhair/
 // Override with config.local.js for Stripe keys and admin token (not in Git)
 // Use window.CONFIG to avoid "already declared" when fallback runs
 window.CONFIG = {
-    // Backend API URL - Hostinger (PHP API + MySQL)
+    // Backend API URL (Railway)
     API_BASE_URL: 'https://fabordering-production.up.railway.app/api',
     
     // Stripe Configuration

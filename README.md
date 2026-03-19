@@ -2,6 +2,10 @@
 
 A modern Progressive Web App (PWA) for Teas & Cs coffee shop, featuring a complete ordering system with offline functionality.
 
+## Hosting
+
+This project is deployed on **Railway** (Node backend: Stripe, orders API, admin JSON data, etc.). The PWA may be served from the same Railway service (static files) and/or from your main domain; `API_BASE_URL` in `config.js` (and optional `config.local.js`) points at your Railway API base path.
+
 ## 🌟 Features
 
 - **Progressive Web App** - Installable on mobile devices

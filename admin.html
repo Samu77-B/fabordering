@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teas & C's - Admin Dashboard</title>
+    <title>Teas &amp; C's - Admin Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%236B7A5A'/%3E%3C/svg%3E" type="image/svg+xml">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1939,6 +1940,31 @@
     
     <!-- Simple Database Integration Script -->
     <script>
+        /** Read JSON from fetch; if server returns HTML/PHP, show a clear config hint. */
+        async function parseResponseJson(response, contextLabel) {
+            const text = await response.text();
+            const trimmed = (text || '').trim();
+            if (!trimmed) {
+                if (!response.ok) {
+                    throw new Error((contextLabel || 'Request') + ' failed: empty body (HTTP ' + response.status + ')');
+                }
+                return null;
+            }
+            if (trimmed.charAt(0) === '<') {
+                const url = response.url || '(unknown URL)';
+                console.error(contextLabel + ' — non-JSON response from:', url);
+                throw new Error(
+                    (contextLabel || 'API') + ' returned HTML/PHP instead of JSON. ' +
+                    'Set CONFIG.API_BASE_URL in config.js on this site to your Railway API (…/up.railway.app/api), not your Hostinger PHP /api folder.'
+                );
+            }
+            try {
+                return JSON.parse(trimmed);
+            } catch (e) {
+                throw new Error((contextLabel || 'API') + ' invalid JSON: ' + e.message);
+            }
+        }
+
         // Load categories from database
         async function loadCategoriesFromDatabase() {
             try {
@@ -1946,9 +1972,10 @@
                 const response = await fetch(`${CONFIG.API_BASE_URL}/categories.php`, {
                     headers: {
                         'Authorization': `Bearer ${CONFIG.ADMIN_TOKEN}`
-                    }
+                    },
+                    cache: 'no-store'
                 });
-                const data = await response.json();
+                const data = await parseResponseJson(response, 'Categories');
                 
                 if (data.success && data.categories) {
                     categories = data.categories;
@@ -1974,13 +2001,14 @@
         window.loadData = async function() {
             try {
                 console.log('Loading products from database...');
-                const response = await fetch(`${CONFIG.API_BASE_URL}/admin/products`, {
+                const productsUrl = `${CONFIG.API_BASE_URL}/admin/products`;
+                const response = await fetch(productsUrl, {
                     headers: {
                         'Authorization': `Bearer ${CONFIG.ADMIN_TOKEN}`
                     },
                     cache: 'no-store'
                 });
-                const data = await response.json();
+                const data = await parseResponseJson(response, 'Products');
                 
                 if (response.ok && Array.isArray(data)) {
                     products = data;
@@ -2045,7 +2073,7 @@
                     });
                 }
 
-                const result = await response.json();
+                const result = await parseResponseJson(response, 'Save product');
                 
                 if (response.ok && result.success) {
                     showNotification(editId ? 'Product updated successfully!' : 'Product added successfully!', 'success');
@@ -2071,7 +2099,7 @@
                     }
                 });
 
-                const result = await response.json();
+                const result = await parseResponseJson(response, 'Delete product');
                 
                 if (response.ok && result.success) {
                     showNotification('Product deleted successfully!', 'success');
