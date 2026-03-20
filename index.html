@@ -2393,6 +2393,71 @@
         let ACTIVE_DISCOUNT_CODE = getDiscountCode();
         let DISCOUNT_PERCENTAGE = getDiscountPercentage();
 
+        // After Stripe redirect (3DS / wallets) the page reloads — cart is empty. Persist order for POST.
+        const PENDING_ORDER_STORAGE_KEY = 'teasCsPendingOrderV1';
+        const PENDING_ORDER_MAX_AGE_MS = 60 * 60 * 1000;
+
+        function buildPendingOrderPayload() {
+            const deliveryOption = document.querySelector('input[name="deliveryOption"]:checked')?.value || 'deliver';
+            const deliveryText = deliveryOption === 'deliver' ? 'Deliver to chair' : 'Customer will pick up when hair is done';
+            const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+            const pct = getDiscountPercentage();
+            const discountAmount = subtotal * (pct / 100);
+            const total = Math.max(0, subtotal - discountAmount);
+            return {
+                items: cart.map(item => ({
+                    name: item.name,
+                    type: item.type,
+                    quantity: item.quantity,
+                    price: item.price,
+                    size: item.size,
+                    milk: item.milk,
+                    sweetener: item.sweetener
+                })),
+                subtotal,
+                discountPercentage: pct,
+                discountAmount,
+                total,
+                customerInfo: {
+                    email: document.getElementById('customerEmail')?.value?.trim() || '',
+                    name: document.getElementById('customerName')?.value?.trim() || ''
+                },
+                chairNumber: 'Chair ' + (document.getElementById('chairNumber')?.textContent || 'One'),
+                message: document.getElementById('orderMessage')?.value?.trim() || '',
+                deliveryOption: deliveryText,
+                savedAt: Date.now()
+            };
+        }
+
+        function persistPendingOrderForPayment() {
+            try {
+                if (!cart.length) return;
+                sessionStorage.setItem(PENDING_ORDER_STORAGE_KEY, JSON.stringify(buildPendingOrderPayload()));
+            } catch (e) {
+                console.warn('Could not persist pending order', e);
+            }
+        }
+
+        function loadPendingOrderSnapshot() {
+            try {
+                const raw = sessionStorage.getItem(PENDING_ORDER_STORAGE_KEY);
+                if (!raw) return null;
+                const p = JSON.parse(raw);
+                if (!p.savedAt || (Date.now() - p.savedAt > PENDING_ORDER_MAX_AGE_MS)) {
+                    sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY);
+                    return null;
+                }
+                if (!Array.isArray(p.items) || p.items.length === 0) return null;
+                return p;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function clearPendingOrderSnapshot() {
+            try { sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY); } catch (_) {}
+        }
+
         // Header scroll effect
         window.addEventListener('scroll', function() {
             const header = document.querySelector('.header');
@@ -3712,11 +3777,15 @@
                         })
                     });
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
                     const text = await response.text();
+                    if (!response.ok) {
+                        let detail = '';
+                        try {
+                            const errJson = JSON.parse(text);
+                            if (errJson && errJson.error) detail = ': ' + errJson.error;
+                        } catch (e) { /* ignore */ }
+                        throw new Error(`HTTP error! status: ${response.status}${detail}`);
+                    }
                     if (text.trim().startsWith('<')) {
                         throw new Error('Server returned a page instead of payment data. Check that api/create-payment-intent.php exists at ' + (this.getPaymentIntentUrl() || 'your API URL') + ' and returns JSON.');
                     }
@@ -3739,6 +3808,7 @@
             }
 
             async processPayment() {
+                persistPendingOrderForPayment();
                 const {error} = await this.stripe.confirmPayment({
                     elements: this.elements,
                     confirmParams: {
@@ -3754,10 +3824,10 @@
                 const {paymentIntent} = await this.stripe.retrievePaymentIntent(this.clientSecret);
                 if (paymentIntent && paymentIntent.status === 'succeeded') {
                     this.paymentIntentId = paymentIntent.id;
-                    this.showPaymentSuccess();
+                    await this.showPaymentSuccess();
                     return true;
                 }
-                return true;
+                return false;
             }
 
             setupStripeElements() {
@@ -3856,29 +3926,58 @@
             
             async sendOrderToBackend() {
                 try {
+                    const snap = loadPendingOrderSnapshot();
                     const deliveryOption = document.querySelector('input[name="deliveryOption"]:checked')?.value || 'deliver';
                     const deliveryText = deliveryOption === 'deliver' ? 'Deliver to chair' : 'Customer will pick up when hair is done';
-                    
-                    const orderDetails = {
-                        items: cart.map(item => ({
+                    const chairLive = 'Chair ' + document.getElementById('chairNumber').textContent;
+
+                    let items;
+                    let total;
+                    let chairNumber;
+                    let deliveryOpt;
+                    let message;
+
+                    if (snap && snap.items.length > 0) {
+                        items = snap.items;
+                        total = snap.total;
+                        chairNumber = snap.chairNumber || chairLive;
+                        deliveryOpt = snap.deliveryOption || deliveryText;
+                        message = document.getElementById('orderMessage')?.value?.trim() || snap.message || '';
+                    } else {
+                        items = cart.map(item => ({
                             name: item.name,
                             quantity: item.quantity,
                             price: item.price,
                             size: item.size,
                             milk: item.milk,
                             sweetener: item.sweetener
-                        })),
-                        total: cart.reduce((sum, item) => sum + item.price, 0),
+                        }));
+                        const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+                        const pct = getDiscountPercentage();
+                        total = Math.max(0, subtotal - subtotal * (pct / 100));
+                        chairNumber = chairLive;
+                        deliveryOpt = deliveryText;
+                        message = document.getElementById('orderMessage')?.value?.trim() || '';
+                    }
+
+                    if (!items || items.length === 0) {
+                        console.error('sendOrderToBackend: no line items (cart empty and no session snapshot). Order not sent.');
+                        return;
+                    }
+
+                    const orderDetails = {
+                        items,
+                        total,
                         customerInfo: {
-                            email: document.getElementById('customerEmail')?.value?.trim() || '',
-                            name: document.getElementById('customerName')?.value?.trim() || ''
+                            email: document.getElementById('customerEmail')?.value?.trim() || (snap && snap.customerInfo && snap.customerInfo.email) || '',
+                            name: document.getElementById('customerName')?.value?.trim() || (snap && snap.customerInfo && snap.customerInfo.name) || ''
                         },
                         paymentIntentId: this.paymentIntentId,
-                        chairNumber: 'Chair ' + document.getElementById('chairNumber').textContent,
-                        message: document.getElementById('orderMessage')?.value?.trim() || '',
-                        deliveryOption: deliveryText
+                        chairNumber,
+                        message,
+                        deliveryOption: deliveryOpt
                     };
-                    
+
                     const apiUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : 'http://localhost:3001';
                     const response = await fetch(`${apiUrl}/api/orders`, {
                         method: 'POST',
@@ -3887,9 +3986,10 @@
                         },
                         body: JSON.stringify(orderDetails)
                     });
-                    
+
                     if (response.ok) {
                         console.log('Order sent to backend successfully');
+                        clearPendingOrderSnapshot();
                     } else {
                         console.error('Failed to send order to backend');
                     }
@@ -3931,13 +4031,23 @@
                 return;
             }
 
-            // Calculate subtotal
-            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            // item.price is already the line total (from modal: unit+options × quantity), do not multiply by quantity again
+            const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
             
             // Calculate discount (get fresh values in case admin updated them)
             const currentDiscountPercentage = getDiscountPercentage();
             const discountAmount = subtotal * (currentDiscountPercentage / 100);
-            const total = subtotal - discountAmount;
+            const total = Math.max(0, subtotal - discountAmount);
+            
+            const MIN_CHECKOUT_GBP = 0.5;
+            if (!Number.isFinite(total) || total < MIN_CHECKOUT_GBP) {
+                alert(
+                    !Number.isFinite(total)
+                        ? 'Basket total is invalid. Remove items and try again, or check product prices in admin.'
+                        : `Order total must be at least £${MIN_CHECKOUT_GBP.toFixed(2)} (Stripe minimum). Your total is £${total.toFixed(2)} — set product prices in admin or reduce the discount.`
+                );
+                return;
+            }
             
             // Show payment page
             hideAllPages();
@@ -3960,6 +4070,8 @@
             // Update payment summary
             updatePaymentSummary();
             
+            persistPendingOrderForPayment();
+            
             // Initialize Stripe payment with discounted total
             stripePayment.initializePayment(total);
         }
@@ -3978,7 +4090,7 @@
             
             // Calculate items and subtotal
             cart.forEach(item => {
-                const itemTotal = item.price * item.quantity;
+                const itemTotal = Number(item.price) || 0; // line total, already includes quantity
                 subtotal += itemTotal;
                 
                 summaryHTML += `
@@ -4020,7 +4132,7 @@
                     const {paymentIntent} = await stripe.retrievePaymentIntent(clientSecret);
                     if (paymentIntent && paymentIntent.status === 'succeeded') {
                         stripePayment.paymentIntentId = paymentIntent.id;
-                        stripePayment.showPaymentSuccess();
+                        await stripePayment.showPaymentSuccess();
                         window.history.replaceState({}, '', window.location.pathname);
                         setTimeout(() => { cart = []; updateCartDisplay(); showOrderConfirmation(); }, 1500);
                     }

@@ -210,12 +210,14 @@ app.post('/create-payment-intent', async (req, res) => {
             return res.status(500).json({ error: 'Payment server not configured. Check Railway logs.' });
         }
         const { amount, currency = 'gbp' } = req.body;
-        
-        // Validate amount (frontend sends amount in pounds, e.g. 5.50)
-        if (amount == null || amount === '' || Number(amount) < 0.5) { // Minimum £0.50
-            return res.status(400).json({ error: 'Invalid amount' });
+        const amountNum = Number(amount);
+        // Validate amount (frontend sends pounds, e.g. 5.50). Stripe UK practical minimum £0.30; we use £0.50 for card fees UX
+        if (amount == null || amount === '' || !Number.isFinite(amountNum) || amountNum < 0.5) {
+            return res.status(400).json({
+                error: 'Invalid amount — total must be at least £0.50. Check product prices in admin (not £0) and discount %.'
+            });
         }
-        const amountPence = Math.round(Number(amount) * 100);
+        const amountPence = Math.round(amountNum * 100);
         
         // Create PaymentIntent (automatic_payment_methods enables Apple Pay, Google Pay, etc.)
         const paymentIntent = await stripe.paymentIntents.create({
@@ -243,10 +245,13 @@ app.post('/api/create-payment-intent.php', async (req, res) => {
             return res.status(500).json({ error: 'Payment server not configured. Check Railway logs.' });
         }
         const { amount, currency = 'gbp' } = req.body;
-        if (amount == null || amount === '' || Number(amount) < 0.5) {
-            return res.status(400).json({ error: 'Invalid amount' });
+        const amountNumPhp = Number(amount);
+        if (amount == null || amount === '' || !Number.isFinite(amountNumPhp) || amountNumPhp < 0.5) {
+            return res.status(400).json({
+                error: 'Invalid amount — total must be at least £0.50. Check product prices in admin (not £0) and discount %.'
+            });
         }
-        const amountPence = Math.round(Number(amount) * 100);
+        const amountPence = Math.round(amountNumPhp * 100);
         const paymentIntent = await stripe.paymentIntents.create({
             amount: amountPence,
             currency: currency,

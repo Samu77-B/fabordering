@@ -361,11 +361,28 @@
 
             const itemsHtml = normalised.items.map(i => {
                 const name = i.name || i.item_name || i.title || 'Item';
-                const quantity = i.quantity || i.qty || 1;
-                const unitPriceRaw = i.price ?? i.unit_price ?? i.price_per_item ?? 0;
-                const unitPrice = Number(unitPriceRaw) || 0;
-                const lineTotal = unitPrice * quantity;
-                return `<div class="order-item"><span>${name} × ${quantity}</span><span>£${lineTotal.toFixed(2)}</span></div>`;
+                const quantity = Math.max(1, Number(i.quantity || i.qty) || 1);
+                let lineTotal = 0;
+                if (i.line_total != null && i.line_total !== '' && Number.isFinite(Number(i.line_total))) {
+                    lineTotal = Number(i.line_total);
+                } else if (i.lineTotal != null && i.lineTotal !== '' && Number.isFinite(Number(i.lineTotal))) {
+                    lineTotal = Number(i.lineTotal);
+                } else {
+                    const unitRaw = i.unit_price ?? i.unitPrice ?? i.price_per_item;
+                    if (unitRaw != null && unitRaw !== '' && Number.isFinite(Number(unitRaw))) {
+                        lineTotal = Number(unitRaw) * quantity;
+                    } else {
+                        // PWA stores `price` as full line total (incl. qty & options), not unit price
+                        lineTotal = Number(i.price) || 0;
+                    }
+                }
+                const mods = [];
+                if (i.size) mods.push(i.size === 'large' ? 'Large' : (i.size === 'regular' ? 'Regular' : i.size));
+                if (i.milk) mods.push(i.milk === 'whole' ? 'whole milk' : `${i.milk} milk`);
+                if (i.sweetener && i.sweetener !== 'none') mods.push(i.sweetener);
+                const modStr = mods.length ? ` · ${mods.join(', ')}` : '';
+                const label = quantity > 1 ? `${name}${modStr} × ${quantity}` : `${name}${modStr}`;
+                return `<div class="order-item"><span>${label}</span><span>£${lineTotal.toFixed(2)}</span></div>`;
             }).join('');
 
             const deliveryHtml = normalised.deliveryOption
