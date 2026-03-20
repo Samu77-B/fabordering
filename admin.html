@@ -1967,14 +1967,11 @@
     
     <!-- Simple Database Integration Script -->
     <script>
-        // Load categories from database
+        // Load categories from database (public endpoint — no token; avoids 401 when config.js token drifts)
         async function loadCategoriesFromDatabase() {
             try {
                 console.log('Loading categories from database...');
-                const response = await fetch(`${CONFIG.API_BASE_URL}/admin/categories`, {
-                    headers: {
-                        'Authorization': `Bearer ${CONFIG.ADMIN_TOKEN}`
-                    },
+                const response = await fetch(`${CONFIG.API_BASE_URL}/categories.php`, {
                     cache: 'no-store'
                 });
                 const data = await parseResponseJson(response, 'Categories');
@@ -2003,17 +2000,16 @@
         window.loadData = async function() {
             try {
                 console.log('Loading products from database...');
-                const productsUrl = `${CONFIG.API_BASE_URL}/admin/products`;
-                const response = await fetch(productsUrl, {
-                    headers: {
-                        'Authorization': `Bearer ${CONFIG.ADMIN_TOKEN}`
-                    },
-                    cache: 'no-store'
-                });
+                // Public catalog endpoint (same as storefront) — no Bearer; add/edit/delete still use ADMIN_TOKEN
+                const productsUrl = `${CONFIG.API_BASE_URL}/products.php`;
+                const response = await fetch(productsUrl, { cache: 'no-store' });
                 const data = await parseResponseJson(response, 'Products');
-                
-                if (response.ok && Array.isArray(data)) {
-                    products = data;
+                const list = Array.isArray(data)
+                    ? data
+                    : (data && data.success && Array.isArray(data.products) ? data.products : null);
+
+                if (response.ok && list !== null) {
+                    products = list;
                     console.log('Products loaded:', products.length, 'products');
                     
                     // Update the UI
