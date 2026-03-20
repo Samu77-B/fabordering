@@ -21,6 +21,10 @@ AppData/
 # Large files
 *.pdf
 
+# Database exports (may contain password hashes — do not commit)
+u556329104_localhost.json
+*_localhost.json
+
 # Local configuration files (contain sensitive credentials)
 config.local.js
 api/config.local.php
