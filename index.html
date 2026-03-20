@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <title>Teas & C's - Ordering</title>
@@ -42,10 +44,20 @@
                 ENVIRONMENT: 'production'
             };
         }
+        /** Prevent XSS when rendering API/menu names into HTML */
+        function escapeHtml(s) {
+            if (s == null || s === undefined) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
     </script>
     
     <!-- Dynamic Product Loader -->
-    <script src="dynamic_products.js?v=10"></script>
+    <script src="dynamic_products.js?v=11"></script>
     
     <style>
         * {
@@ -3022,11 +3034,12 @@
                 if (item.size !== 'regular') details.push(item.size);
                 if (item.milk !== 'whole') details.push(item.milk);
                 if (item.sweetener !== 'none') details.push(item.sweetener);
+                const detailsStr = details.length > 0 ? escapeHtml(details.join(', ')) : 'Standard';
                 
                 itemElement.innerHTML = `
                     <div class="basket-item-info">
-                        <div class="basket-item-name">${item.name} x${item.quantity}</div>
-                        <div class="basket-item-details">${details.length > 0 ? details.join(', ') : 'Standard'}</div>
+                        <div class="basket-item-name">${escapeHtml(item.name)} x${Number(item.quantity) || 1}</div>
+                        <div class="basket-item-details">${detailsStr}</div>
                     </div>
                     <div class="basket-item-price">£${item.price.toFixed(2)}</div>
                     <button class="basket-item-remove" onclick="removeFromBasket(${index})">×</button>
@@ -4095,7 +4108,7 @@
                 
                 summaryHTML += `
                     <div class="summary-item">
-                        <span>${item.name} x${item.quantity}</span>
+                        <span>${escapeHtml(item.name)} x${Number(item.quantity) || 1}</span>
                         <span>£${itemTotal.toFixed(2)}</span>
                     </div>
                 `;

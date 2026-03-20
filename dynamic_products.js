@@ -1,6 +1,16 @@
 // Dynamic Product Loader for Main Website
 // This script will load products from the database and update the HTML
 
+function escapeHtml(s) {
+    if (s == null || s === undefined) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 /** Admin/Railway saves camelCase; Hostinger export used snake_case — support both */
 function getRegularPrice(product) {
     const v = product.regular_price ?? product.regularPrice;
@@ -158,7 +168,7 @@ function updateProductHTML(products) {
                         );
                         
                         item.innerHTML = `
-                            <span class="list-item-name">${product.name}</span>
+                            <span class="list-item-name">${escapeHtml(product.name)}</span>
                             <div class="price-container">
                                 <span class="original-price">Normal price £${(getRegularPrice(product) * 1.25).toFixed(2)}</span>
                                 <span class="discounted-price">Your price £${getRegularPrice(product).toFixed(2)}</span>
@@ -199,7 +209,7 @@ function updateTeaCategory(categoryElement, products) {
             );
             
             item.innerHTML = `
-                <span class="list-item-name">${product.name}</span>
+                <span class="list-item-name">${escapeHtml(product.name)}</span>
                 <div class="price-container">
                     <span class="original-price">Normal price £${(getRegularPrice(product) * 1.25).toFixed(2)}</span>
                     <span class="discounted-price">Your price £${getRegularPrice(product).toFixed(2)}</span>
@@ -244,7 +254,7 @@ function updateMatchaCategory(categoryElement, products) {
             );
             
             item.innerHTML = `
-                <span class="list-item-name">${product.name}</span>
+                <span class="list-item-name">${escapeHtml(product.name)}</span>
                 <div class="price-container">
                     <span class="original-price">Normal price £${(getRegularPrice(product) * 1.25).toFixed(2)}</span>
                     <span class="discounted-price">Your price £${getRegularPrice(product).toFixed(2)}</span>
@@ -288,7 +298,7 @@ function updateMatchaCategory(categoryElement, products) {
             );
             
             item.innerHTML = `
-                <span class="list-item-name">${product.name}</span>
+                <span class="list-item-name">${escapeHtml(product.name)}</span>
                 <div class="price-container">
                     <span class="original-price">Normal price £${(getRegularPrice(product) * 1.25).toFixed(2)}</span>
                     <span class="discounted-price">Your price £${getRegularPrice(product).toFixed(2)}</span>

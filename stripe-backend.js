@@ -5,6 +5,8 @@
 const express = require('express');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
 
@@ -17,6 +19,31 @@ if (!process.env.STRIPE_SECRET_KEY) {
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Railway / reverse proxy — needed for rate limiting and secure cookies behind proxy
+app.set('trust proxy', 1);
+
+// Safe HTTP headers (no default CSP — would break Stripe + inline scripts in static HTML)
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
+
+/** Slow down abuse without hurting a normal salon day */
+const orderCreateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 80,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many orders from this network. Please try again in a few minutes.' }
+});
+const paymentIntentLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many payment attempts. Please wait and try again.' }
+});
 
 // Data storage files
 const DATA_DIR = path.join(__dirname, 'data');
@@ -203,7 +230,7 @@ app.get('/api/products.php', (req, res) => {
 });
 
 // Create PaymentIntent endpoint
-app.post('/create-payment-intent', async (req, res) => {
+app.post('/create-payment-intent', paymentIntentLimiter, async (req, res) => {
     try {
         if (!process.env.STRIPE_SECRET_KEY) {
             console.error('STRIPE_SECRET_KEY missing in Railway Variables');
@@ -238,7 +265,7 @@ app.post('/create-payment-intent', async (req, res) => {
 });
 
 // PHP-compatible payment intent (frontend calls /api/create-payment-intent.php)
-app.post('/api/create-payment-intent.php', async (req, res) => {
+app.post('/api/create-payment-intent.php', paymentIntentLimiter, async (req, res) => {
     try {
         if (!process.env.STRIPE_SECRET_KEY) {
             console.error('STRIPE_SECRET_KEY missing in Railway Variables');
@@ -639,8 +666,8 @@ const createOrderHandler = (req, res) => {
         res.status(500).json({ error: 'Failed to create order' });
     }
 };
-app.post('/api/orders', createOrderHandler);
-app.post('/api/api/orders', createOrderHandler);
+app.post('/api/orders', orderCreateLimiter, createOrderHandler);
+app.post('/api/api/orders', orderCreateLimiter, createOrderHandler);
 
 // Get products for frontend
 app.get('/api/products', (req, res) => {

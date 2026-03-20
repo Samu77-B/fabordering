@@ -1,4 +1,7 @@
 // Configuration for production
+// Security: STRIPE_PUBLISHABLE_KEY is safe to expose. ADMIN_TOKEN is visible in DevTools on any
+// browser that loads admin/barista pages — use a strong random value, rotate if leaked, and
+// keep Railway ADMIN_TOKEN in sync. Do not commit real secrets to a public GitHub repo.
 // IMPORTANT: API_BASE_URL must be your Railway Node API root, ending in /api
 // (e.g. https://YOUR-SERVICE.up.railway.app/api).
 // If you point this at https://teasandcs.com/.../api (Hostinger PHP), admin will get raw "<?php ..." and JSON.parse will fail.
