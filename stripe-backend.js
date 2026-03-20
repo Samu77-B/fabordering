@@ -566,6 +566,26 @@ app.put('/api/admin/orders/:id/status', authenticateAdmin, (req, res) => {
     }
 });
 
+// Remove all completed orders (barista "clear completed list") — must be before /:id delete
+app.delete('/api/admin/orders/completed', authenticateAdmin, (req, res) => {
+    try {
+        const orders = readDataFile(ORDERS_FILE);
+        if (!Array.isArray(orders)) {
+            return res.status(500).json({ error: 'Invalid orders data' });
+        }
+        const pending = orders.filter(o => o.status !== 'completed');
+        const removed = orders.length - pending.length;
+        if (writeDataFile(ORDERS_FILE, pending)) {
+            res.json({ success: true, message: 'Completed orders cleared', removed });
+        } else {
+            res.status(500).json({ error: 'Failed to save orders' });
+        }
+    } catch (error) {
+        console.error('Error clearing completed orders:', error);
+        res.status(500).json({ error: 'Failed to clear completed orders' });
+    }
+});
+
 // Delete order
 app.delete('/api/admin/orders/:id', authenticateAdmin, (req, res) => {
     try {
