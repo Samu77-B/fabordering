@@ -1,6 +1,19 @@
 // Dynamic Product Loader for Main Website
 // This script will load products from the database and update the HTML
 
+/** Admin/Railway saves camelCase; Hostinger export used snake_case — support both */
+function getRegularPrice(product) {
+    const v = product.regular_price ?? product.regularPrice;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function getLargePrice(product) {
+    const v = product.large_price ?? product.largePrice;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+}
+
 async function loadCategoriesFromDatabase() {
     try {
         console.log('Loading categories from database...');
@@ -139,16 +152,16 @@ function updateProductHTML(products) {
                         item.className = 'list-item';
                         item.onclick = () => openCustomizeModal(
                             product.name, 
-                            parseFloat(product.regular_price), 
-                            parseFloat(product.large_price), 
+                            getRegularPrice(product), 
+                            getLargePrice(product), 
                             product.type
                         );
                         
                         item.innerHTML = `
                             <span class="list-item-name">${product.name}</span>
                             <div class="price-container">
-                                <span class="original-price">Normal price £${(parseFloat(product.regular_price) * 1.25).toFixed(2)}</span>
-                                <span class="discounted-price">Your price £${parseFloat(product.regular_price).toFixed(2)}</span>
+                                <span class="original-price">Normal price £${(getRegularPrice(product) * 1.25).toFixed(2)}</span>
+                                <span class="discounted-price">Your price £${getRegularPrice(product).toFixed(2)}</span>
                             </div>
                         `;
                         
@@ -180,16 +193,16 @@ function updateTeaCategory(categoryElement, products) {
             item.className = 'list-item';
             item.onclick = () => openCustomizeModal(
                 product.name, 
-                parseFloat(product.regular_price), 
-                parseFloat(product.large_price), 
+                getRegularPrice(product), 
+                getLargePrice(product), 
                 product.type
             );
             
             item.innerHTML = `
                 <span class="list-item-name">${product.name}</span>
                 <div class="price-container">
-                    <span class="original-price">Normal price £${(parseFloat(product.regular_price) * 1.25).toFixed(2)}</span>
-                    <span class="discounted-price">Your price £${parseFloat(product.regular_price).toFixed(2)}</span>
+                    <span class="original-price">Normal price £${(getRegularPrice(product) * 1.25).toFixed(2)}</span>
+                    <span class="discounted-price">Your price £${getRegularPrice(product).toFixed(2)}</span>
                 </div>
             `;
             
@@ -225,16 +238,16 @@ function updateMatchaCategory(categoryElement, products) {
             item.className = 'list-item';
             item.onclick = () => openCustomizeModal(
                 product.name, 
-                parseFloat(product.regular_price), 
-                parseFloat(product.large_price), 
+                getRegularPrice(product), 
+                getLargePrice(product), 
                 product.type
             );
             
             item.innerHTML = `
                 <span class="list-item-name">${product.name}</span>
                 <div class="price-container">
-                    <span class="original-price">Normal price £${(parseFloat(product.regular_price) * 1.25).toFixed(2)}</span>
-                    <span class="discounted-price">Your price £${parseFloat(product.regular_price).toFixed(2)}</span>
+                    <span class="original-price">Normal price £${(getRegularPrice(product) * 1.25).toFixed(2)}</span>
+                    <span class="discounted-price">Your price £${getRegularPrice(product).toFixed(2)}</span>
                 </div>
             `;
             
@@ -269,16 +282,16 @@ function updateMatchaCategory(categoryElement, products) {
             item.className = 'list-item';
             item.onclick = () => openCustomizeModal(
                 product.name, 
-                parseFloat(product.regular_price), 
-                parseFloat(product.large_price), 
+                getRegularPrice(product), 
+                getLargePrice(product), 
                 product.type
             );
             
             item.innerHTML = `
                 <span class="list-item-name">${product.name}</span>
                 <div class="price-container">
-                    <span class="original-price">Normal price £${(parseFloat(product.regular_price) * 1.25).toFixed(2)}</span>
-                    <span class="discounted-price">Your price £${parseFloat(product.regular_price).toFixed(2)}</span>
+                    <span class="original-price">Normal price £${(getRegularPrice(product) * 1.25).toFixed(2)}</span>
+                    <span class="discounted-price">Your price £${getRegularPrice(product).toFixed(2)}</span>
                 </div>
             `;
             

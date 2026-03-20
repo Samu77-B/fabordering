@@ -45,7 +45,7 @@
     </script>
     
     <!-- Dynamic Product Loader -->
-    <script src="dynamic_products.js?v=9"></script>
+    <script src="dynamic_products.js?v=10"></script>
     
     <style>
         * {
@@ -2751,11 +2751,11 @@
         }
 
         // Modal functions
-        function openCustomizeModal(name, regularPrice, largePrice, type) {
+        function openCustomizeModal(name, regularPrice, largePriceValue, type) {
             triggerHapticFeedback();
             currentItem = { name, type };
-            basePrice = regularPrice;
-            this.largePrice = largePrice;
+            basePrice = Number(regularPrice) || 0;
+            largePrice = Number(largePriceValue) || 0;
             selectedOptions = { size: 'regular', milk: 'whole', sweetener: 'none' };
             quantity = 1;
             
