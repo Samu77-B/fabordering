@@ -1225,6 +1225,18 @@
             document.getElementById('totalRevenue').textContent = `£${totalRevenue.toFixed(2)}`;
         }
 
+        function categorySortKey(c) {
+            const n = c.order ?? c.display_order;
+            return Number(n) || 0;
+        }
+
+        /** Hostinger/MySQL export uses display_order and may omit active — treat as active unless explicitly off */
+        function categoryIsActive(c) {
+            const a = c.active;
+            if (a === false || a === 0 || a === '0' || String(a).toLowerCase() === 'false') return false;
+            return true;
+        }
+
         // Category Management
         function loadCategories() {
             const categoriesList = document.getElementById('categoriesList');
@@ -1240,8 +1252,8 @@
             // Update product counts for each category
             updateCategoryProductCounts();
 
-            // Sort categories by order
-            const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
+            // Sort categories by order (Node/Railway uses order; MySQL export uses display_order)
+            const sortedCategories = [...categories].sort((a, b) => categorySortKey(a) - categorySortKey(b));
 
             sortedCategories.forEach(category => {
                 const categoryCard = document.createElement('div');
@@ -1257,12 +1269,12 @@
                             <div class="category-stat-label">Products</div>
                         </div>
                         <div class="category-stat">
-                            <div class="category-stat-number">${category.order}</div>
+                            <div class="category-stat-number">${category.order ?? category.display_order ?? '—'}</div>
                             <div class="category-stat-label">Order</div>
                         </div>
                     </div>
-                    <div class="category-status ${category.active ? 'status-active' : 'status-inactive'}">
-                        ${category.active ? 'Active' : 'Inactive'}
+                    <div class="category-status ${categoryIsActive(category) ? 'status-active' : 'status-inactive'}">
+                        ${categoryIsActive(category) ? 'Active' : 'Inactive'}
                     </div>
                     <div class="product-actions">
                         <button class="btn btn-small" onclick="editCategory(${category.id})">Edit</button>
@@ -1306,8 +1318,8 @@
                 document.getElementById('categoryDescription').value = category.description || '';
                 document.getElementById('categorySubtitle').value = category.subtitle || '';
                 document.getElementById('categoryIcon').value = category.icon || '';
-                document.getElementById('categoryOrder').value = category.order;
-                document.getElementById('categoryActive').checked = category.active;
+                document.getElementById('categoryOrder').value = category.order ?? category.display_order ?? 1;
+                document.getElementById('categoryActive').checked = categoryIsActive(category);
                 
                 // Store the category ID for editing
                 document.getElementById('categoryForm').setAttribute('data-edit-id', id);
@@ -1448,10 +1460,10 @@
             const categorySelect = document.getElementById('productCategory');
             categorySelect.innerHTML = '';
             
-            // Sort categories by order and filter active ones
+            // Sort categories by order and filter active ones (support MySQL export: display_order, no active field)
             const activeCategories = categories
-                .filter(cat => cat.active)
-                .sort((a, b) => a.order - b.order);
+                .filter(cat => categoryIsActive(cat))
+                .sort((a, b) => categorySortKey(a) - categorySortKey(b));
             
             activeCategories.forEach(category => {
                 const option = document.createElement('option');
