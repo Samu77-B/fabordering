@@ -628,7 +628,7 @@
             <h2 class="section-title">Product Management</h2>
             
             <div class="form-group">
-                <button class="btn btn-success" onclick="showAddProductForm()">Add New Product</button>
+                <button type="button" class="btn btn-success" onclick="void showAddProductForm()">Add New Product</button>
                 <button class="btn btn-secondary" onclick="testBackendConnection()">Test Backend</button>
                 <button class="btn btn-secondary" onclick="loadData()">Reload Data</button>
                 <button class="btn btn-secondary" onclick="refreshStorefront()">Refresh Storefront</button>
@@ -863,8 +863,9 @@
                 const url = response.url || '(unknown URL)';
                 console.error((contextLabel || 'API') + ' — non-JSON response from:', url);
                 throw new Error(
-                    (contextLabel || 'API') + ' returned HTML/PHP instead of JSON. ' +
-                    'Set CONFIG.API_BASE_URL in config.js to your Railway API (…/up.railway.app/api), not your Hostinger PHP folder.'
+                    (contextLabel || 'API') + ' returned HTML/PHP instead of JSON (fetched: ' + url + '). ' +
+                    'If the URL is Railway: redeploy the latest backend (static files must not shadow /api/*.php). ' +
+                    'If the URL is your domain: set CONFIG.API_BASE_URL in config.js to …/up.railway.app/api.'
                 );
             }
             try {
@@ -1445,11 +1446,15 @@
             });
         }
 
-        function showAddProductForm() {
+        async function showAddProductForm() {
+            if (!categories || categories.length === 0) {
+                await loadCategoriesFromDatabase();
+            }
             document.getElementById('productForm').classList.remove('hidden');
             document.getElementById('productName').value = '';
             populateCategoryDropdown();
-            document.getElementById('productCategory').value = categories.length > 0 ? categories[0].slug : '';
+            const firstSlug = categories.find(c => categoryIsActive(c))?.slug || (categories[0] && categories[0].slug) || '';
+            document.getElementById('productCategory').value = firstSlug;
             document.getElementById('regularPrice').value = '';
             document.getElementById('largePrice').value = '';
             document.getElementById('productType').value = 'tea';
@@ -1976,16 +1981,28 @@
                 });
                 const data = await parseResponseJson(response, 'Categories');
                 
-                if (data.success && data.categories) {
-                    categories = data.categories;
+                if (data.success && Array.isArray(data.categories)) {
+                    if (data.categories.length === 0) {
+                        // Railway data/categories.json can be [] after a fresh deploy — use defaults so product form works
+                        console.warn('Categories API returned empty array; using built-in defaults');
+                        initializeDefaultCategories();
+                    } else {
+                        categories = data.categories;
+                    }
                     console.log('Categories loaded:', categories.length, 'categories');
-                    loadCategories(); // Update the UI
+                    loadCategories(); // Categories tab UI
+                    if (document.getElementById('productCategory')) {
+                        populateCategoryDropdown(); // Product form <select> (same bug if only loadCategories ran)
+                    }
                 } else {
                     console.error('Failed to load categories:', data);
                     showNotification('Failed to load categories from database: ' + (data.error || 'Unknown error'), 'error');
                     // Fallback to default categories
                     initializeDefaultCategories();
                     loadCategories();
+                    if (document.getElementById('productCategory')) {
+                        populateCategoryDropdown();
+                    }
                 }
             } catch (error) {
                 console.error('Error loading categories:', error);
@@ -1993,6 +2010,9 @@
                 // Fallback to default categories
                 initializeDefaultCategories();
                 loadCategories();
+                if (document.getElementById('productCategory')) {
+                    populateCategoryDropdown();
+                }
             }
         }
 

@@ -177,8 +177,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Serve static files (admin dashboard)
-app.use(express.static(__dirname));
+// Do NOT put express.static(__dirname) here — the repo still contains legacy api/*.php files.
+// Static was shadowing GET /api/products.php and /api/categories.php with raw PHP source (starts with "<"),
+// which breaks the admin/PWA JSON parsers. Static is registered after all API routes (see bottom of file).
 
 // PHP-compatible routes (frontend expects .php extension when API_BASE_URL ends with /api)
 app.get('/api/categories.php', (req, res) => {
@@ -684,6 +685,9 @@ app.post('/api/validate-discount', (req, res) => {
 app.get('/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+// Static files (admin.html, PWA assets) — must be last so /api/* routes win over files on disk
+app.use(express.static(__dirname));
 
 app.listen(PORT, () => {
     console.log(`Stripe backend server running on port ${PORT}`);
